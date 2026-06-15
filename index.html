@@ -13,7 +13,7 @@
     // Supabase
     const SUPA_URL = 'https://hcwbseetqgowwvdvdpkz.supabase.co';
     const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjd2JzZWV0cWdvd3d2ZHZkcGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2OTgwMjIsImV4cCI6MjA5MDI3NDAyMn0.k3ROFEBN85f8tYLQ3JLiZKYHnDwfe6QUC2-yz_EQTQ8';
-    const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
     // EmailJS
     const EJS_PUBLIC_KEY   = 'gyLSmTELTy9TaAXfx';
     const EJS_SERVICE_ID   = 'personnelstaffingaus';
@@ -830,7 +830,7 @@ function Police({ setPage }) {
     idType: '', idNumber: '',
     consent1: false, consent2: false, consent3: false,
   });
-  const [files, setFiles] = useState({ selfie: null, idFront: null, idBack: null });
+  const [files, setFiles] = useState({ selfie: null, licenceFront: null, licenceBack: null, secondaryFront: null, secondaryBack: null });
 
   const up = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const fileRef = useRef({});
@@ -858,7 +858,7 @@ function Police({ setPage }) {
 
   async function loadAdminApps() {
     try {
-      const { data } = await supabase
+      const { data } = await db
         .from('forgepoint_police_checks')
         .select('*')
         .order('created_at', { ascending: false })
@@ -872,7 +872,7 @@ function Police({ setPage }) {
     setSubmitError('');
     try {
       // Save to Supabase
-      const { error: dbError } = await supabase.from('forgepoint_police_checks').insert([{
+      const { error: dbError } = await db.from('forgepoint_police_checks').insert([{
         ref_number: refNum,
         first_name: form.firstName,
         last_name: form.lastName,
@@ -1040,32 +1040,73 @@ function Police({ setPage }) {
                 {step === 3 && (
                   <div className="form-card">
                     <h3>Identity Documents</h3>
-                    <p className="sub">Upload clear photos of your identity documents. All files are encrypted and handled in accordance with the Privacy Act 1988.</p>
-                    <div className="form-row">
-                      <div className="form-group"><label>Primary ID Type <span className="req">*</span></label>
-                        <select value={form.idType} onChange={e => up('idType', e.target.value)}>
-                          <option value="">Select…</option>
-                          <option>Australian Driver's Licence</option>
-                          <option>Australian Passport</option>
-                          <option>Medicare Card</option>
-                        </select>
-                      </div>
-                      <div className="form-group"><label>Document Number <span className="req">*</span></label><input value={form.idNumber} onChange={e => up('idNumber', e.target.value)} placeholder="e.g. 12345678" /></div>
-                    </div>
-                    {[['selfie', '📷 Selfie Photo', 'A clear selfie photo of yourself — no sunglasses or hats. JPG, PNG or PDF. Max 10MB.'],
-                      ['idFront', '🪪 ID — Front', 'Clear photo of the front of your ID document. JPG, PNG or PDF. Max 10MB.'],
-                      ['idBack', '🪪 ID — Back', 'Clear photo of the back of your ID document (if applicable). JPG, PNG or PDF.'],
-                    ].map(([key, title, hint]) => (
-                      <div key={key}>
-                        <input type="file" ref={el => fileRef.current[key] = el} style={{ display: 'none' }}
-                          onChange={e => setFiles(f => ({ ...f, [key]: e.target.files[0]?.name || null }))} />
-                        <div className={`upload-zone${files[key] ? ' has-file' : ''}`} onClick={() => fileRef.current[key]?.click()}>
-                          <div className="upload-zone-icon">{files[key] ? '✅' : '⬆️'}</div>
-                          <h4>{files[key] ? files[key] : title}</h4>
-                          <p>{files[key] ? 'File uploaded — click to replace' : hint}</p>
+                    <p className="sub">Upload clear photos of all required documents. All files are encrypted and handled in accordance with the Privacy Act 1988.</p>
+
+                    {/* Primary ID */}
+                    <div style={{ background: 'var(--off-white)', border: '1px solid var(--gray-light)', borderRadius: 'var(--radius-sm)', padding: '20px 24px', marginBottom: 24 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--orange)', marginBottom: 14 }}>Primary ID (Licence)</div>
+                      <div className="form-row">
+                        <div className="form-group"><label>Primary ID Type <span className="req">*</span></label>
+                          <select value={form.idType} onChange={e => up('idType', e.target.value)}>
+                            <option value="">Select…</option>
+                            <option>Australian Driver's Licence</option>
+                            <option>Australian Passport</option>
+                            <option>Medicare Card</option>
+                          </select>
                         </div>
+                        <div className="form-group"><label>Document Number <span className="req">*</span></label><input value={form.idNumber} onChange={e => up('idNumber', e.target.value)} placeholder="e.g. 12345678" /></div>
                       </div>
-                    ))}
+                      {[
+                        ['selfie',      '📷 Selfie Holding Licence',     'Hold your licence next to your face. No sunglasses or hats. Must clearly show both your face and the licence. JPG, PNG or PDF. Max 10MB.'],
+                        ['licenceFront','🪪 Licence — Front',             'Clear photo of the front of your driver\'s licence showing your name, DOB, and licence number. JPG, PNG or PDF. Max 10MB.'],
+                        ['licenceBack', '🪪 Licence — Back',              'Clear photo of the back of your driver\'s licence. JPG, PNG or PDF. Max 10MB.'],
+                      ].map(([key, title, hint]) => (
+                        <div key={key}>
+                          <input type="file" accept="image/*,.pdf" ref={el => fileRef.current[key] = el} style={{ display: 'none' }}
+                            onChange={e => setFiles(f => ({ ...f, [key]: e.target.files[0]?.name || null }))} />
+                          <div className={`upload-zone${files[key] ? ' has-file' : ''}`} onClick={() => fileRef.current[key]?.click()}>
+                            <div className="upload-zone-icon">{files[key] ? '✅' : '⬆️'}</div>
+                            <h4>{files[key] ? files[key] : title}</h4>
+                            <p>{files[key] ? 'File uploaded — click to replace' : hint}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Secondary ID */}
+                    <div style={{ background: 'var(--off-white)', border: '1px solid var(--gray-light)', borderRadius: 'var(--radius-sm)', padding: '20px 24px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--orange)', marginBottom: 4 }}>Secondary ID</div>
+                      <p style={{ fontSize: 13, color: 'var(--gray-dark)', marginBottom: 14 }}>e.g. Medicare card, passport, birth certificate, or any other government-issued ID.</p>
+                      <div className="form-row">
+                        <div className="form-group"><label>Secondary ID Type</label>
+                          <select value={form.secondaryIdType || ''} onChange={e => up('secondaryIdType', e.target.value)}>
+                            <option value="">Select…</option>
+                            <option>Medicare Card</option>
+                            <option>Australian Passport</option>
+                            <option>Birth Certificate</option>
+                            <option>Citizenship Certificate</option>
+                            <option>ImmiCard</option>
+                            <option>Other Government ID</option>
+                          </select>
+                        </div>
+                        <div className="form-group"><label>Secondary Document Number</label><input value={form.secondaryIdNumber || ''} onChange={e => up('secondaryIdNumber', e.target.value)} placeholder="e.g. 1234 56789 0" /></div>
+                      </div>
+                      {[
+                        ['secondaryFront', '🪪 Secondary ID — Front', 'Clear photo of the front of your secondary ID document. JPG, PNG or PDF. Max 10MB.'],
+                        ['secondaryBack',  '🪪 Secondary ID — Back',  'Clear photo of the back of your secondary ID document (if applicable). JPG, PNG or PDF. Max 10MB.'],
+                      ].map(([key, title, hint]) => (
+                        <div key={key}>
+                          <input type="file" accept="image/*,.pdf" ref={el => fileRef.current[key] = el} style={{ display: 'none' }}
+                            onChange={e => setFiles(f => ({ ...f, [key]: e.target.files[0]?.name || null }))} />
+                          <div className={`upload-zone${files[key] ? ' has-file' : ''}`} onClick={() => fileRef.current[key]?.click()}>
+                            <div className="upload-zone-icon">{files[key] ? '✅' : '⬆️'}</div>
+                            <h4>{files[key] ? files[key] : title}</h4>
+                            <p>{files[key] ? 'File uploaded — click to replace' : hint}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
                     <div className="form-nav">
                       <button className="btn-back" onClick={() => setStep(2)}>← Back</button>
                       <button className="btn-primary" onClick={() => setStep(4)}>Next: Consent →</button>
@@ -1248,7 +1289,7 @@ function Contact({ setPage }) {
     setSendError('');
     try {
       // Save to Supabase
-      await supabase.from('forgepoint_contact_enquiries').insert([{
+      await db.from('forgepoint_contact_enquiries').insert([{
         name: form.name,
         company: form.company,
         email: form.email,
