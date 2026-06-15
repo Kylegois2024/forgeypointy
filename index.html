@@ -872,7 +872,7 @@ function Police({ setPage }) {
     setSubmitError('');
     try {
       // Save to Supabase
-      await supabase.from('forgepoint_police_checks').insert([{
+      const { error: dbError } = await supabase.from('forgepoint_police_checks').insert([{
         ref_number: refNum,
         first_name: form.firstName,
         last_name: form.lastName,
@@ -894,9 +894,10 @@ function Police({ setPage }) {
         status: 'pending',
         company: 'ForgePoint Workforce',
       }]);
+      if (dbError) throw new Error('Supabase: ' + dbError.message);
 
       // Send EmailJS notification to Ryan
-      await emailjs.send(EJS_SERVICE_ID, EJS_POLICE_TPL, {
+      const ejsResult = await emailjs.send(EJS_SERVICE_ID, EJS_POLICE_TPL, {
         to_email: 'ryan@forgeworkforceaus.com',
         ref_number: refNum,
         applicant_name: `${form.firstName} ${form.lastName}`,
@@ -907,10 +908,12 @@ function Police({ setPage }) {
         submitted_at: new Date().toLocaleString('en-AU', { timeZone: 'Australia/Melbourne' }),
         company: 'ForgePoint Workforce',
       });
+      if (ejsResult.status !== 200) throw new Error('EmailJS: status ' + ejsResult.status);
 
       setSubmitted(true);
     } catch(err) {
-      setSubmitError('Something went wrong. Please try again or call 0434 681 471.');
+      console.error('Submit error:', err);
+      setSubmitError('Error: ' + err.message);
     } finally {
       setSubmitting(false);
     }
