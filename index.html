@@ -871,7 +871,44 @@ function Police({ setPage }) {
     setSubmitting(true);
     setSubmitError('');
     try {
-      // Save to Supabase
+
+      // Upload files to Supabase Storage (same bucket as PSA: id-documents)
+      const uploadFile = async (file, label) => {
+        if (!file) return null;
+        const ext = file.name.split('.').pop();
+        const path = `${refNum}/${label}.${ext}`;
+        const r = await fetch(`${SUPA_URL}/storage/v1/object/id-documents/${path}`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPA_KEY,
+            'Authorization': `Bearer ${SUPA_KEY}`,
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+          body: file,
+        });
+        if (!r.ok) {
+          const txt = await r.text();
+          throw new Error('Storage upload failed (' + label + '): ' + txt);
+        }
+        return `${SUPA_URL}/storage/v1/object/id-documents/${path}`;
+      };
+
+      // Upload all 5 files — use actual File objects from fileRef
+      const selfieFile       = fileRef.current['selfie']?.files[0] || null;
+      const licenceFrontFile = fileRef.current['licenceFront']?.files[0] || null;
+      const licenceBackFile  = fileRef.current['licenceBack']?.files[0] || null;
+      const secFrontFile     = fileRef.current['secondaryFront']?.files[0] || null;
+      const secBackFile      = fileRef.current['secondaryBack']?.files[0] || null;
+
+      const [selfieUrl, licenceFrontUrl, licenceBackUrl, secFrontUrl, secBackUrl] = await Promise.all([
+        uploadFile(selfieFile,       'selfie-with-licence'),
+        uploadFile(licenceFrontFile, 'licence-front'),
+        uploadFile(licenceBackFile,  'licence-back'),
+        uploadFile(secFrontFile,     'secondary-front'),
+        uploadFile(secBackFile,      'secondary-back'),
+      ]);
+
+      // Save to Supabase DB
       const { error: dbError } = await db.from('forgepoint_police_checks').insert([{
         ref_number: refNum,
         first_name: form.firstName,
@@ -891,10 +928,17 @@ function Police({ setPage }) {
         work_site: form.workSite,
         id_type: form.idType,
         id_number: form.idNumber,
+        secondary_id_type: form.secondaryIdType || null,
+        secondary_id_number: form.secondaryIdNumber || null,
+        doc_selfie: selfieUrl,
+        doc_licence_front: licenceFrontUrl,
+        doc_licence_back: licenceBackUrl,
+        doc_secondary_front: secFrontUrl,
+        doc_secondary_back: secBackUrl,
         status: 'pending',
         company: 'ForgePoint Workforce',
       }]);
-      if (dbError) throw new Error('Supabase: ' + dbError.message);
+      if (dbError) throw new Error('Supabase DB: ' + dbError.message);
 
       // Send EmailJS notification to Ryan
       const ejsResult = await emailjs.send(EJS_SERVICE_ID, EJS_POLICE_TPL, {
