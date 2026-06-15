@@ -7,6 +7,20 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    // Supabase
+    const SUPA_URL = 'https://hcwbseetqgowwvdvdpkz.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjd2JzZWV0cWdvd3d2ZHZkcGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2OTgwMjIsImV4cCI6MjA5MDI3NDAyMn0.k3ROFEBN85f8tYLQ3JLiZKYHnDwfe6QUC2-yz_EQTQ8';
+    const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    // EmailJS
+    const EJS_PUBLIC_KEY   = 'gyLSmTELTy9TaAXfx';
+    const EJS_SERVICE_ID   = 'personnelstaffingaus';
+    const EJS_POLICE_TPL   = 'template_s7758nl';
+    const EJS_CONTACT_TPL  = 'template_w3e2d1k';
+    emailjs.init(EJS_PUBLIC_KEY);
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -797,14 +811,17 @@ function Services({ setPage }) {
 
 /* ── POLICE CHECK ── */
 function Police({ setPage }) {
-  const [tab, setTab] = useState('apply'); // apply | track | admin
+  const [tab, setTab] = useState('apply');
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [refNum] = useState('FPW-2025-' + Math.floor(1000 + Math.random() * 9000));
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [adminPw, setAdminPw] = useState('');
   const [trackRef, setTrackRef] = useState('');
   const [trackResult, setTrackResult] = useState(null);
+  const [dbApps, setDbApps] = useState([]);
   const [form, setForm] = useState({
     firstName: '', lastName: '', dob: '', gender: '', email: '', phone: '',
     address: '', suburb: '', state: '', postcode: '',
@@ -837,6 +854,66 @@ function Police({ setPage }) {
     const r = trackRef.trim().toUpperCase();
     if (trackStatuses[r]) setTrackResult({ ref: r, ...trackStatuses[r] });
     else setTrackResult('not_found');
+  }
+
+  async function loadAdminApps() {
+    try {
+      const { data } = await supabase
+        .from('forgepoint_police_checks')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (data && data.length > 0) setDbApps(data);
+    } catch(e) {}
+  }
+
+  async function handlePoliceSubmit() {
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      // Save to Supabase
+      await supabase.from('forgepoint_police_checks').insert([{
+        ref_number: refNum,
+        first_name: form.firstName,
+        last_name: form.lastName,
+        dob: form.dob,
+        gender: form.gender,
+        email: form.email,
+        phone: form.phone,
+        address: form.address,
+        suburb: form.suburb,
+        state: form.state,
+        postcode: form.postcode,
+        birth_country: form.birthCountry,
+        birth_suburb: form.birthSuburb,
+        birth_state: form.birthState,
+        check_type: form.checkType,
+        work_site: form.workSite,
+        id_type: form.idType,
+        id_number: form.idNumber,
+        status: 'pending',
+        company: 'ForgePoint Workforce',
+      }]);
+
+      // Send EmailJS notification to Ryan
+      await emailjs.send(EJS_SERVICE_ID, EJS_POLICE_TPL, {
+        to_email: 'ryan@forgeworkforce.com',
+        ref_number: refNum,
+        applicant_name: `${form.firstName} ${form.lastName}`,
+        applicant_email: form.email,
+        applicant_phone: form.phone,
+        work_site: form.workSite || 'Not specified',
+        check_type: form.checkType,
+        submitted_at: new Date().toLocaleString('en-AU', { timeZone: 'Australia/Melbourne' }),
+        company: 'ForgePoint Workforce',
+      });
+
+      setSubmitted(true);
+    } catch(err) {
+      setSubmitError('Something went wrong. Please try again or call 0434 681 471.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -1014,13 +1091,18 @@ function Police({ setPage }) {
                         {label}
                       </label>
                     ))}
+                    {submitError && (
+                      <div style={{ background: 'var(--error-bg)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: 'var(--radius-sm)', padding: 12, fontSize: 13, color: 'var(--error)', marginBottom: 16 }}>
+                        {submitError}
+                      </div>
+                    )}
                     <div className="form-nav">
-                      <button className="btn-back" onClick={() => setStep(3)}>← Back</button>
+                      <button className="btn-back" onClick={() => setStep(3)} disabled={submitting}>← Back</button>
                       <button className="btn-primary"
-                        disabled={!form.consent1 || !form.consent2 || !form.consent3}
-                        style={{ opacity: (!form.consent1 || !form.consent2 || !form.consent3) ? 0.5 : 1 }}
-                        onClick={() => setSubmitted(true)}>
-                        Submit Application ✓
+                        disabled={!form.consent1 || !form.consent2 || !form.consent3 || submitting}
+                        style={{ opacity: (!form.consent1 || !form.consent2 || !form.consent3 || submitting) ? 0.6 : 1 }}
+                        onClick={handlePoliceSubmit}>
+                        {submitting ? 'Submitting…' : 'Submit Application ✓'}
                       </button>
                     </div>
                   </div>
@@ -1100,10 +1182,18 @@ function Police({ setPage }) {
                   <div className="sec-label">Admin Dashboard</div>
                   <div className="sec-title" style={{ fontSize: 32 }}>APPLICATIONS</div>
                 </div>
-                <button className="btn-back" onClick={() => { setAdminAuthed(false); setAdminPw(''); }}>Sign Out</button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button className="btn-primary" onClick={loadAdminApps}>↻ Refresh</button>
+                  <button className="btn-back" onClick={() => { setAdminAuthed(false); setAdminPw(''); }}>Sign Out</button>
+                </div>
               </div>
               <div className="stats-row">
-                {[['23', 'Total Applications'], ['4', 'Pending Review'], ['17', 'Cleared'], ['2', 'In Progress']].map(([n, l]) => (
+                {[
+                  [String(dbApps.length || sampleApps.length), 'Total Applications'],
+                  [String(dbApps.filter(a => a.status === 'pending').length || 4), 'Pending Review'],
+                  [String(dbApps.filter(a => a.status === 'clear').length || 17), 'Cleared'],
+                  [String(dbApps.filter(a => a.status === 'reviewing').length || 2), 'In Progress'],
+                ].map(([n, l]) => (
                   <div key={l} className="stat-box"><strong>{n}</strong><span>{l}</span></div>
                 ))}
               </div>
@@ -1114,7 +1204,13 @@ function Police({ setPage }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {sampleApps.map(a => (
+                  {(dbApps.length > 0 ? dbApps.map(a => ({
+                    ref: a.ref_number,
+                    name: `${a.first_name} ${a.last_name}`,
+                    site: a.work_site || '—',
+                    submitted: new Date(a.created_at).toLocaleDateString('en-AU'),
+                    status: a.status,
+                  })) : sampleApps).map(a => (
                     <tr key={a.ref}>
                       <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{a.ref}</td>
                       <td style={{ fontWeight: 600 }}>{a.name}</td>
@@ -1125,6 +1221,7 @@ function Police({ setPage }) {
                   ))}
                 </tbody>
               </table>
+              {dbApps.length === 0 && <p style={{ fontSize: 13, color: 'var(--gray-mid)', marginTop: 12 }}>Showing sample data. Click Refresh to load live applications from the database.</p>}
             </div>
           )}
 
@@ -1137,8 +1234,45 @@ function Police({ setPage }) {
 /* ── CONTACT ── */
 function Contact({ setPage }) {
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [form, setForm] = useState({ name: '', company: '', email: '', phone: '', message: '' });
   const up = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  async function handleContactSubmit() {
+    if (!form.name || !form.email || !form.message) return;
+    setSending(true);
+    setSendError('');
+    try {
+      // Save to Supabase
+      await supabase.from('forgepoint_contact_enquiries').insert([{
+        name: form.name,
+        company: form.company,
+        email: form.email,
+        phone: form.phone,
+        message: form.message,
+        submitted_at: new Date().toISOString(),
+      }]);
+
+      // Send email via EmailJS
+      await emailjs.send(EJS_SERVICE_ID, EJS_CONTACT_TPL, {
+        to_email: 'ryan@forgeworkforce.com',
+        from_name: form.name,
+        from_company: form.company || 'Not provided',
+        from_email: form.email,
+        from_phone: form.phone || 'Not provided',
+        message: form.message,
+        submitted_at: new Date().toLocaleString('en-AU', { timeZone: 'Australia/Melbourne' }),
+        company: 'ForgePoint Workforce',
+      });
+
+      setSent(true);
+    } catch(err) {
+      setSendError('Something went wrong. Please try again or call 0434 681 471.');
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <>
@@ -1210,7 +1344,14 @@ function Contact({ setPage }) {
                     <div className="form-group"><label>Phone</label><input type="tel" value={form.phone} onChange={e => up('phone', e.target.value)} placeholder="04XX XXX XXX" /></div>
                   </div>
                   <div className="form-group"><label>How can we help? <span style={{ color: 'var(--orange)' }}>*</span></label><textarea value={form.message} onChange={e => up('message', e.target.value)} rows={5} placeholder="Tell us about your staffing needs, a police check inquiry, or anything else…" /></div>
-                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => setSent(true)}>Send Message →</button>
+                  {sendError && (
+                    <div style={{ background: 'var(--error-bg)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: 'var(--radius-sm)', padding: 12, fontSize: 13, color: 'var(--error)', marginBottom: 12 }}>
+                      {sendError}
+                    </div>
+                  )}
+                  <button className="btn-primary" style={{ width: '100%', opacity: sending ? 0.6 : 1 }} onClick={handleContactSubmit} disabled={sending}>
+                    {sending ? 'Sending…' : 'Send Message →'}
+                  </button>
                 </div>
               )}
             </div>
