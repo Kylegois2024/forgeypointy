@@ -831,6 +831,8 @@ function Police({ setPage }) {
     consent1: false, consent2: false, consent3: false,
   });
   const [files, setFiles] = useState({ selfie: null, licenceFront: null, licenceBack: null, secondaryFront: null, secondaryBack: null });
+  // Store actual File objects separately for upload
+  const fileObjects = useRef({ selfie: null, licenceFront: null, licenceBack: null, secondaryFront: null, secondaryBack: null });
 
   const up = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const fileRef = useRef({});
@@ -893,12 +895,12 @@ function Police({ setPage }) {
         return `${SUPA_URL}/storage/v1/object/id-documents/${path}`;
       };
 
-      // Upload all 5 files — use actual File objects from fileRef
-      const selfieFile       = fileRef.current['selfie']?.files[0] || null;
-      const licenceFrontFile = fileRef.current['licenceFront']?.files[0] || null;
-      const licenceBackFile  = fileRef.current['licenceBack']?.files[0] || null;
-      const secFrontFile     = fileRef.current['secondaryFront']?.files[0] || null;
-      const secBackFile      = fileRef.current['secondaryBack']?.files[0] || null;
+      // Upload all 5 files from stored File objects
+      const selfieFile       = fileObjects.current['selfie'];
+      const licenceFrontFile = fileObjects.current['licenceFront'];
+      const licenceBackFile  = fileObjects.current['licenceBack'];
+      const secFrontFile     = fileObjects.current['secondaryFront'];
+      const secBackFile      = fileObjects.current['secondaryBack'];
 
       const [selfieUrl, licenceFrontUrl, licenceBackUrl, secFrontUrl, secBackUrl] = await Promise.all([
         uploadFile(selfieFile,       'selfie-with-licence'),
@@ -1106,7 +1108,13 @@ function Police({ setPage }) {
                       ].map(([key, title, hint]) => (
                         <div key={key}>
                           <input type="file" accept="image/*,.pdf" ref={el => fileRef.current[key] = el} style={{ display: 'none' }}
-                            onChange={e => setFiles(f => ({ ...f, [key]: e.target.files[0]?.name || null }))} />
+                            onChange={e => {
+                              const f = e.target.files[0];
+                              if (f) {
+                                fileObjects.current[key] = f;
+                                setFiles(prev => ({ ...prev, [key]: f.name }));
+                              }
+                            }} />
                           <div className={`upload-zone${files[key] ? ' has-file' : ''}`} onClick={() => fileRef.current[key]?.click()}>
                             <div className="upload-zone-icon">{files[key] ? '✅' : '⬆️'}</div>
                             <h4>{files[key] ? files[key] : title}</h4>
@@ -1140,7 +1148,13 @@ function Police({ setPage }) {
                       ].map(([key, title, hint]) => (
                         <div key={key}>
                           <input type="file" accept="image/*,.pdf" ref={el => fileRef.current[key] = el} style={{ display: 'none' }}
-                            onChange={e => setFiles(f => ({ ...f, [key]: e.target.files[0]?.name || null }))} />
+                            onChange={e => {
+                              const f = e.target.files[0];
+                              if (f) {
+                                fileObjects.current[key] = f;
+                                setFiles(prev => ({ ...prev, [key]: f.name }));
+                              }
+                            }} />
                           <div className={`upload-zone${files[key] ? ' has-file' : ''}`} onClick={() => fileRef.current[key]?.click()}>
                             <div className="upload-zone-icon">{files[key] ? '✅' : '⬆️'}</div>
                             <h4>{files[key] ? files[key] : title}</h4>
