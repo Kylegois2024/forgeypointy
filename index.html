@@ -897,7 +897,7 @@ function Police({ setPage }) {
 
       // Send EmailJS notification to Ryan
       await emailjs.send(EJS_SERVICE_ID, EJS_POLICE_TPL, {
-        to_email: 'ryan@forgeworkforce.com',
+        to_email: 'ryan@forgeworkforceaus.com',
         ref_number: refNum,
         applicant_name: `${form.firstName} ${form.lastName}`,
         applicant_email: form.email,
@@ -1079,7 +1079,7 @@ function Police({ setPage }) {
                       ForgePoint Workforce Pty Ltd ("ForgePoint") is an accredited body under the Australian Criminal Intelligence Commission (ACIC) scheme. We collect your personal information to facilitate a National Police Check.<br /><br />
                       Your personal information will be used only for the purpose of conducting this police check. It will be handled in accordance with the <em>Privacy Act 1988 (Cth)</em>, the Australian Privacy Principles, and ACIC accreditation requirements.<br /><br />
                       The results of your National Police Check may be disclosed to the employer or organisation that requested this check, as specified in this application. Your information will not be used for any other purpose or shared with any third party without your consent, except where required by law.<br /><br />
-                      You have the right to access and correct information we hold about you. For privacy queries, contact us at ryan@forgeworkforce.com.
+                      You have the right to access and correct information we hold about you. For privacy queries, contact us at ryan@forgeworkforceaus.com.
                     </div>
                     {[
                       ['consent1', 'I consent to ForgePoint Workforce collecting, using, and disclosing my personal information for the purpose of a National Police Check, as described in the Privacy Notice above.'],
@@ -1155,7 +1155,7 @@ function Police({ setPage }) {
                 </div>
               )}
               <div style={{ marginTop: 28, padding: '16px', background: 'var(--off-white)', borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--gray-dark)' }}>
-                <strong>Can't find your reference?</strong> Contact us at ryan@forgeworkforce.com or call 0434 681 471.
+                <strong>Can't find your reference?</strong> Contact us at ryan@forgeworkforceaus.com or call 0434 681 471.
               </div>
             </div>
           )}
@@ -1256,7 +1256,7 @@ function Contact({ setPage }) {
 
       // Send email via EmailJS
       await emailjs.send(EJS_SERVICE_ID, EJS_CONTACT_TPL, {
-        to_email: 'ryan@forgeworkforce.com',
+        to_email: 'ryan@forgeworkforceaus.com',
         from_name: form.name,
         from_company: form.company || 'Not provided',
         from_email: form.email,
@@ -1305,8 +1305,8 @@ function Contact({ setPage }) {
                   <div className="contact-info-card-icon">📧</div>
                   <div>
                     <h4>Email</h4>
-                    <p>ryan@forgeworkforce.com<br />
-                    <span style={{ fontSize: 12, color: 'var(--gray-mid)' }}>Police checks: ryan@forgeworkforce.com</span></p>
+                    <p>ryan@forgeworkforceaus.com<br />
+                    <span style={{ fontSize: 12, color: 'var(--gray-mid)' }}>Police checks: ryan@forgeworkforceaus.com</span></p>
                   </div>
                 </div>
                 <div className="contact-info-card">
@@ -1393,7 +1393,7 @@ function Footer({ setPage }) {
           </div>
           <div className="ft-col">
             <h4>Contact</h4>
-            <a>ryan@forgeworkforce.com</a>
+            <a>ryan@forgeworkforceaus.com</a>
             <a>0434 681 471</a>
             <a>152 Elizabeth St, Melbourne VIC 3000</a>
             <a>Mon–Fri 7am–6pm AEST</a>
