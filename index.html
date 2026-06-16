@@ -7,7 +7,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
     const SUPA_URL = 'https://hcwbseetqgowwvdvdpkz.supabase.co';
     const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjd2JzZWV0cWdvd3d2ZHZkcGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2OTgwMjIsImV4cCI6MjA5MDI3NDAyMn0.k3ROFEBN85f8tYLQ3JLiZKYHnDwfe6QUC2-yz_EQTQ8';
@@ -35,7 +35,7 @@
     const EJS_SERVICE_ID  = 'personnelstaffingaus';
     const EJS_POLICE_TPL  = 'template_s7758nl';
     const EJS_CONTACT_TPL = 'template_w3e2d1k';
-    emailjs.init(EJS_PUBLIC_KEY);
+    emailjs.init({ publicKey: EJS_PUBLIC_KEY });
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
   <style>
