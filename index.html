@@ -7,7 +7,7 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
     // Supabase
@@ -1090,7 +1090,7 @@ function Police({ setPage }) {
 
                     {/* Primary ID */}
                     <div style={{ background: 'var(--off-white)', border: '1px solid var(--gray-light)', borderRadius: 'var(--radius-sm)', padding: '20px 24px', marginBottom: 24 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--orange)', marginBottom: 14 }}>Primary ID (Licence)</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--orange)', marginBottom: 14 }}>Primary ID (Licence) <span style={{ color: 'var(--error)', fontSize: 12 }}>— all 3 uploads required</span></div>
                       <div className="form-row">
                         <div className="form-group"><label>Primary ID Type <span className="req">*</span></label>
                           <select value={form.idType} onChange={e => up('idType', e.target.value)}>
@@ -1127,7 +1127,7 @@ function Police({ setPage }) {
 
                     {/* Secondary ID */}
                     <div style={{ background: 'var(--off-white)', border: '1px solid var(--gray-light)', borderRadius: 'var(--radius-sm)', padding: '20px 24px' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--orange)', marginBottom: 4 }}>Secondary ID</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--orange)', marginBottom: 4 }}>Secondary ID <span style={{ color: 'var(--error)', fontSize: 12 }}>— front upload required</span></div>
                       <p style={{ fontSize: 13, color: 'var(--gray-dark)', marginBottom: 14 }}>e.g. Medicare card, passport, birth certificate, or any other government-issued ID.</p>
                       <div className="form-row">
                         <div className="form-group"><label>Secondary ID Type</label>
@@ -1167,7 +1167,18 @@ function Police({ setPage }) {
 
                     <div className="form-nav">
                       <button className="btn-back" onClick={() => setStep(2)}>← Back</button>
-                      <button className="btn-primary" onClick={() => setStep(4)}>Next: Consent →</button>
+                      <button className="btn-primary" onClick={() => {
+                        const missing = [];
+                        if (!files.selfie) missing.push('Selfie holding licence');
+                        if (!files.licenceFront) missing.push('Licence — front');
+                        if (!files.licenceBack) missing.push('Licence — back');
+                        if (!files.secondaryFront) missing.push('Secondary ID — front');
+                        if (missing.length > 0) {
+                          alert('Please upload the following required documents before continuing:\n\n• ' + missing.join('\n• '));
+                          return;
+                        }
+                        setStep(4);
+                      }}>Next: Consent →</button>
                     </div>
                   </div>
                 )}
