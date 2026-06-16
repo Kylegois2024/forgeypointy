@@ -7,12 +7,30 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
     const SUPA_URL = 'https://hcwbseetqgowwvdvdpkz.supabase.co';
     const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjd2JzZWV0cWdvd3d2ZHZkcGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2OTgwMjIsImV4cCI6MjA5MDI3NDAyMn0.k3ROFEBN85f8tYLQ3JLiZKYHnDwfe6QUC2-yz_EQTQ8';
-    const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    const db = {
+      from: (table) => ({
+        insert: async (rows) => {
+          const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+            method: 'POST',
+            headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify(rows[0])
+          });
+          if (!r.ok) { const e = await r.text(); return { error: { message: e } }; }
+          return { error: null };
+        },
+        select: async () => {
+          const r = await fetch(`${SUPA_URL}/rest/v1/${table}?select=*&order=created_at.desc&limit=50`, {
+            headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
+          });
+          if (!r.ok) return { data: null };
+          return { data: await r.json() };
+        }
+      })
+    };
     const EJS_PUBLIC_KEY  = 'gyLSmTELTy9TaAXfx';
     const EJS_SERVICE_ID  = 'personnelstaffingaus';
     const EJS_POLICE_TPL  = 'template_s7758nl';
